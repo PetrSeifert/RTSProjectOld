@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class PreviewBuilding : MonoBehaviour
 {
-    public bool canBePlaced;
+    public bool isOverlapping;
+    public bool isOnSteepTerrain;
 
     Renderer renderer;
 
@@ -11,15 +12,20 @@ public class PreviewBuilding : MonoBehaviour
         renderer = GetComponent<Renderer>();
     }
 
+    void Update()
+    {
+        renderer.material.color = GetCanBePlaced() ? Color.white : Color.red;
+    }
+
     void OnTriggerEnter(Collider other)
     {
-        canBePlaced = false;
-        renderer.material.color = Color.red;
+        isOverlapping = true;
     }
 
     void OnTriggerExit(Collider other)
     {
-        canBePlaced = true;
-        renderer.material.color = Color.white;
+        isOverlapping = false;
     }
+
+    public bool GetCanBePlaced() => !isOverlapping && !isOnSteepTerrain;
 }

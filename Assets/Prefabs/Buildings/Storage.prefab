@@ -1,5 +1,60 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2124489232874351611
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1669705167994203271}
+  - component: {fileID: 4164560966244977427}
+  m_Layer: 3
+  m_Name: SelectionCircle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1669705167994203271
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2124489232874351611}
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4078029634132834626}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!114 &4164560966244977427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2124489232874351611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 039ddc5c838e7ce4faee044ab212c14e, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_ScaleMode: 1
+  m_Offset: {x: 0, y: 0, z: 1}
+  m_Size: {x: 2, y: 2, z: 2}
+  m_FadeFactor: 1
 --- !u!1 &4078029634132834627
 GameObject:
   m_ObjectHideFlags: 0
@@ -14,7 +69,7 @@ GameObject:
   - component: {fileID: 4078029634132834624}
   - component: {fileID: 4078029634132834625}
   - component: {fileID: 6502123146466697074}
-  - component: {fileID: -6808063273750511742}
+  - component: {fileID: 1733997011277624230}
   m_Layer: 7
   m_Name: Storage
   m_TagString: Untagged
@@ -31,9 +86,10 @@ Transform:
   m_GameObject: {fileID: 4078029634132834627}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 4, y: 4, z: 4}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1669705167994203271}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -116,11 +172,21 @@ MonoBehaviour:
   resourcesNeededToCreateMe:
     m_keys: 0100000003000000
     m_values: 6400000032000000
-  renderer: {fileID: 4078029634132834639}
+  selectionCircle: {fileID: 2124489232874351611}
   buildingTypeSet:
     m_keys: 00000000
-  buildTime: 10
+  buildTime: 3
   built: 0
+  beingDestroyed: 0
+  onBuilt:
+    m_PersistentCalls:
+      m_Calls: []
+  onBuiltDestroy:
+    m_PersistentCalls:
+      m_Calls: []
+  onDestroy:
+    m_PersistentCalls:
+      m_Calls: []
   storageSpace: 200
 --- !u!54 &6502123146466697074
 Rigidbody:
@@ -138,19 +204,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
---- !u!208 &-6808063273750511742
-NavMeshObstacle:
+--- !u!114 &1733997011277624230
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4078029634132834627}
   m_Enabled: 1
-  serializedVersion: 3
-  m_Shape: 1
-  m_Extents: {x: 0.375, y: 0.5, z: 0.375}
-  m_MoveThreshold: 0.1
-  m_Carve: 1
-  m_CarveOnlyStationary: 1
-  m_Center: {x: 0, y: 0, z: 0}
-  m_TimeToStationary: 0.5
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 220345cbaa167417bbe806f230f68615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  dynamic: 0
+  area: -1

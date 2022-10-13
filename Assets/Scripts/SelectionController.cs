@@ -1,70 +1,55 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Events;
 
 [RequireComponent(typeof(Faction))]
 public class SelectionController : MonoBehaviour
 {
-    [Header("Events")] 
-    public UnityEvent<RTSFactionEntity[]> onRTSFactionEntitiesSelected;
-    public UnityEvent<RTSFactionEntity[]> onRTSFactionEntitiesDeselected;
-    public UnityEvent onSelectionCleared;
-    
-    [HideInInspector] public Dictionary<UnitType, List<Unit>> selectedUnitsByUnitType = new();
     [HideInInspector] public Faction faction;
     [HideInInspector] public List<Unit> selectableUnits = new();
+    [HideInInspector] public Dictionary<UnitType, List<Unit>> selectedUnitsByUnitType = new();
     [HideInInspector] public Building selectedBuilding;
 
 
     void Awake()
     {
         faction = GetComponent<Faction>();
+        foreach (UnitType unitType in GameManager.Instance.unitTypes)
+        {
+            selectedUnitsByUnitType.Add(unitType, new List<Unit>());
+        }
     }
 
-    public void HandleUnitSelection(Unit unit)
+    public void SelectUnit(Unit unit)
     {
-        if (!selectedUnitsByUnitType.ContainsKey(unit.type))
-        {
-            selectedUnitsByUnitType.Add(unit.type, new List<Unit>{unit});
-            onRTSFactionEntitiesSelected.Invoke(new RTSFactionEntity[]{unit});
-        }
-        else
-        {
-            if (selectedUnitsByUnitType[unit.type].Contains(unit))
-            {
-                if (!InputManager.Instance.shiftHeld) return;
-                
-                DeselectUnit(unit);
-                onRTSFactionEntitiesDeselected.Invoke(new RTSFactionEntity[]{unit});
-                
-                if (selectedUnitsByUnitType[unit.type].Count == 0) 
-                    onSelectionCleared.Invoke(); 
-                
-                return;
-            }
-            selectedUnitsByUnitType[unit.type].Add(unit);
-            onRTSFactionEntitiesSelected.Invoke(new RTSFactionEntity[]{unit});
-        }
-        unit.ToggleSelectedColor();
+        selectedUnitsByUnitType[unit.type].Add(unit);
+        EventManager.Instance.onRTSFactionEntitiesSelected.Invoke(new RTSFactionEntity[]{unit});
+        unit.ToggleSelectionCircle();
     }
 
     public void DeselectUnit(Unit unit)
     {
         selectedUnitsByUnitType[unit.type].Remove(unit);
-        unit.ToggleSelectedColor();
+        unit.ToggleSelectionCircle();
+        EventManager.Instance.onRTSFactionEntitiesDeselected.Invoke(new RTSFactionEntity[]{unit});
+        
+        if (selectedUnitsByUnitType[unit.type].Count == 0) 
+            EventManager.Instance.onSelectionCleared.Invoke(); 
     }
 
     public void ClearSelection()
     {
-        onSelectionCleared.Invoke();
-        selectedBuilding = null;
+        EventManager.Instance.onSelectionCleared.Invoke();
+        if (selectedBuilding)
+        {
+            selectedBuilding.ToggleSelectionCircle();
+            selectedBuilding = null;
+        }
         foreach (UnitType unitType in selectedUnitsByUnitType.Keys.ToList())
         {
             foreach (Unit unit in selectedUnitsByUnitType[unitType])
             {
-                unit.ToggleSelectedColor();
+                unit.ToggleSelectionCircle();
             }
             selectedUnitsByUnitType[unitType].Clear();
         }

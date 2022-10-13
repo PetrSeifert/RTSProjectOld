@@ -1,20 +1,20 @@
 using UnityEngine;
-using UnityEngine.AI;
+using Pathfinding;
+using Pathfinding.RVO;
 using UnityEngine.Events;
 
 public enum UnitType
 {
-    Villager
+    Villager, Archer, Soldier, Trader
 }
 
 public class TransformEvent : UnityEvent<Transform> {} //empty class; just needs to exist
 
-public abstract class Unit : RTSFactionEntity, IDamageable, IAttacking
+public class Unit : RTSFactionEntity, IDamageable, IAttacking
 {
     public GameObject myPrefab;
     public UnitType type;
-    public NavMeshAgent navMeshAgent;
-    public NavMeshObstacle navMeshObstacle;
+    public float produceTime;
     
     [Header("Combat")]
     [SerializeField] int health;
@@ -27,58 +27,49 @@ public abstract class Unit : RTSFactionEntity, IDamageable, IAttacking
     public float SqrAttackRange { get; set; }
     public AttackingState AttackingState { get; set; }
     
-    public bool navigationRunning;
     public UnitAction action;
     public TransformEvent onCollisionEntry = new();
     
-    [HideInInspector] public float produceTime;
+    [HideInInspector] public RichAI richAI;
+    
 
-    protected virtual void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        richAI = GetComponent<RichAI>();
         Health = health;
         Damage = damage;
         ReloadTime = reloadTime;
         SqrAttackRange = attackRange * attackRange;
-        navMeshAgent.isStopped = true;
-        navMeshAgent.enabled = false;
+        GetComponent<RVOController>().priority = Random.Range(0f, 1f);
+    }
+
+    protected override void Start()
+    {
+        base.Start();
+        Physics.Raycast(transform.position, Vector3.down, out RaycastHit hitInfo, 200f, GameManager.Instance.terrainLayerMask);
+        transform.position = hitInfo.point;
     }
 
     protected virtual void Update()
     {
         action?.Update();
-    }
-    
-    protected virtual void OnBecameVisible()
-    {
-        if (faction.localPlayerControlled)
-            faction.selectionController.selectableUnits.Add(this);
+        if ((richAI.velocity.magnitude < 2 || !richAI.canMove) && !richAI.pathPending &&
+            !(richAI.reachedDestination || richAI.reachedEndOfPath))
+        {
+            richAI.canMove = true;
+            richAI.SearchPath();
+        }
+
+        if (richAI.reachedDestination || richAI.reachedEndOfPath) richAI.canMove = false;
     }
 
-    protected virtual void OnBecameInvisible()
+    public void NavigateToTarget(Vector3 targetPosition, float endReachedDistance)
     {
-        if (faction.localPlayerControlled)
-            faction.selectionController.selectableUnits.Remove(this);
-    }
-    
-    public void NavigateToTarget(Vector3 targetPosition)
-    {
-        if (navigationRunning)
-        {
-            if (navMeshAgent.pathPending) return;
-            if (action.prioritySet) return;
-            faction.unitController.SetUnitAgentsPriority();
-            action.prioritySet = true;
-        }
-        else
-        {
-            if (!navMeshObstacle.enabled)
-            {
-                navMeshAgent.enabled = true;
-                navMeshAgent.destination = targetPosition;
-                navigationRunning = true;
-            }
-            navMeshObstacle.enabled = false;
-        }
+        richAI.canMove = true;
+        richAI.endReachedDistance = endReachedDistance;
+        richAI.destination = targetPosition;
+        richAI.SearchPath();
     }
 
     public void Attack(IDamageable target)
@@ -102,32 +93,27 @@ public abstract class Unit : RTSFactionEntity, IDamageable, IAttacking
     protected void OnCollisionEnter(Collision collision)
     {
         onCollisionEntry.Invoke(collision.collider.transform);
+        
+    }
+
+    protected void OnCollisionStay(Collision collision)
+    {
+        onCollisionEntry.Invoke(collision.collider.transform);
+        RichAI otherRichAI = collision.collider.GetComponentInParent<RichAI>();
+        if (otherRichAI)
+            if (otherRichAI.reachedEndOfPath && otherRichAI.destination == richAI.destination)
+                richAI.endReachedDistance = richAI.remainingDistance + 0.1f;
     }
 
 
     public void StopNavigation()
     {
-        navMeshAgent.enabled = false;
-        navMeshObstacle.enabled = true;
-        navigationRunning = false;
-        navMeshAgent.avoidancePriority = 0;
+        
     }
 
     public void SetAction(UnitAction newAction)
     {
         action?.Deactivate();
         action = newAction;
-    }
-
-    public void ToggleSelectedColor()
-    {
-        if (renderer.material.color == Color.grey)
-        {
-            renderer.material.color = Color.green;
-        }
-        else if (renderer.material.color == Color.green)
-        {
-            renderer.material.color = Color.grey;
-        }
     }
 }

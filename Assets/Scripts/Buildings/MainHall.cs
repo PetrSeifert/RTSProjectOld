@@ -6,7 +6,6 @@ public class MainHall : Building, IStoring, ISpawnUnits
     [Header("Storage")]
     [SerializeField] int storageSpace;
     
-    
     Queue<Unit> unitsToSpawnQueue = new();
     float currentProduceTime;
     Vector3 defaultReachPoint;
@@ -19,7 +18,7 @@ public class MainHall : Building, IStoring, ISpawnUnits
         StorageSpace = storageSpace;
         AddStorageSpaceToFaction();
         onBuiltDestroy.AddListener(Destroy);
-        defaultReachPoint = transform.position + transform.localScale + Vector3.right * 3;
+        defaultReachPoint = transform.position + transform.localScale + Vector3.right * 5;
     }
 
     protected override void Update()
@@ -44,7 +43,7 @@ public class MainHall : Building, IStoring, ISpawnUnits
         currentProduceTime += Time.deltaTime;
         if (currentProduceTime < unitsToSpawnQueue.Peek().produceTime) return;
         Unit unitToSpawn = unitsToSpawnQueue.Dequeue();
-        GameObject unitObject = Instantiate(unitToSpawn.myPrefab, transform.position, Quaternion.identity, faction.unitsHolder);
+        GameObject unitObject = Instantiate(unitToSpawn.myPrefab, transform.position + Vector3.right * mesh.bounds.size.x, Quaternion.identity, faction.unitsHolder);
         unitToSpawn = unitObject.GetComponent<Unit>(); //Update to scene reference
         unitToSpawn.faction = faction;
         unitToSpawn.SetAction(new MoveToPointAction(unitToSpawn, defaultReachPoint));

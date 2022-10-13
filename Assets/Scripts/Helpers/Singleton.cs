@@ -23,7 +23,7 @@ public class Singleton<T> : MonoBehaviour where T : Component
                 instance = FindObjectOfType<T> ();
                 if (instance == null)
                 {
-                    GameObject obj = new GameObject ();
+                    GameObject obj = new();
                     obj.name = typeof(T).Name + "_AutoCreated";
                     instance = obj.AddComponent<T> ();
                 }

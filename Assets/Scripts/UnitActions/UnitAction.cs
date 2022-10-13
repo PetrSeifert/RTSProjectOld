@@ -10,13 +10,10 @@ public abstract class UnitAction
     protected UnitAction(Unit unit)
     {
         this.unit = unit;
-        unit.navigationRunning = false;
-        unit.onCollisionEntry.AddListener(StopIfCollidedWithTarget);
     }
 
     public void Deactivate()
     {
-        unit.onCollisionEntry.RemoveListener(StopIfCollidedWithTarget);
         unit.action = null;
     }
     
@@ -25,6 +22,4 @@ public abstract class UnitAction
     /// Should be called by unit.
     /// </summary>
     public abstract void Update();
-
-    protected abstract void StopIfCollidedWithTarget(Transform transform);
 }

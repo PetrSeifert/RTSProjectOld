@@ -29,25 +29,41 @@ public class ClickSelectionController : MonoBehaviour
 
     void ClickSelection()
     {
-        if (UI_Manager.Instance.ClickedOnUI()) return;
+        if (UI_Manager.Instance.ClickedOnUI() || selectionController.faction.buildingPlacer.placingBuilding) return;
         bool hitSelectable = Physics.Raycast(GameManager.Instance.mouseCameraRay, out RaycastHit hitInfo, 210, clickSelectionLayerMask);
-        if (!hitSelectable && !InputManager.Instance.shiftHeld)
+        if (!hitSelectable)
         {
-            selectionController.ClearSelection();
+            if (!InputManager.Instance.shiftHeld)
+                selectionController.ClearSelection();
             return;
         }
 
         RTSFactionEntity hitFactionEntity = hitInfo.collider.GetComponent<RTSFactionEntity>();
+        if (!hitFactionEntity)
+        {
+            hitFactionEntity = hitInfo.collider.GetComponentInParent<RTSFactionEntity>();
+            if (!hitFactionEntity) return;
+        }
         if (hitFactionEntity.faction != selectionController.faction) return;
         Unit unit = hitFactionEntity as Unit;
         if (unit)
         {
-            selectionController.onRTSFactionEntitiesDeselected.Invoke(new RTSFactionEntity[]{selectionController.selectedBuilding});
-            selectionController.selectedBuilding = null; //We dont want to have units and building selected together
+            if (selectionController.selectedBuilding)
+            {
+                EventManager.Instance.onRTSFactionEntitiesDeselected.Invoke(new RTSFactionEntity[]{selectionController.selectedBuilding});
+                selectionController.selectedBuilding.ToggleSelectionCircle();
+                selectionController.selectedBuilding = null; 
+            }
             if (!InputManager.Instance.shiftHeld)
                 selectionController.ClearSelection();
             
-            selectionController.HandleUnitSelection(unit);
+            if (selectionController.selectedUnitsByUnitType[unit.type].Contains(unit))
+            {
+                if (!InputManager.Instance.shiftHeld) return;
+                selectionController.DeselectUnit(unit); // If unit is already selected and player is holding shift, than deselect that unit
+                return;
+            }
+            selectionController.SelectUnit(unit);
             return;
         }
         
@@ -55,8 +71,9 @@ public class ClickSelectionController : MonoBehaviour
         if (building)
         {
             selectionController.ClearSelection(); //We want to have only one building selected and nothing else
-            selectionController.onRTSFactionEntitiesSelected.Invoke(new RTSFactionEntity[]{building});
             selectionController.selectedBuilding = building;
+            selectionController.selectedBuilding.ToggleSelectionCircle();
+            EventManager.Instance.onRTSFactionEntitiesSelected.Invoke(new RTSFactionEntity[]{building});
         }
     }
     

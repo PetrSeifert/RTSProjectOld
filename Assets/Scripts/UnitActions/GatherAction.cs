@@ -10,7 +10,7 @@ public enum GatheringState
 
 public class GatheringAction : UnitAction
 {
-    readonly ResourceSource resourceSource;
+    ResourceSource resourceSource;
     readonly IGathering gatheringUnit;
     Vector3 lastResourceSourcePosition;
     Building nearestStorage;
@@ -33,7 +33,7 @@ public class GatheringAction : UnitAction
             {GatheringState.StoreResources, StoreResources},
             {GatheringState.ReachLastSourcePosition, NavReachLastSourcePosition}
         };
-        targetTransform = resourceSource.gameObject.transform;
+        targetTransform = resourceSource.transform;
     }
     
     public override void Update()
@@ -53,17 +53,23 @@ public class GatheringAction : UnitAction
             gatheringUnit.GatheringState = GatheringState.ReachLastSourcePosition;
             return;
         }
-        unit.NavigateToTarget(resourceSource.transform.position);
+        if (unit.richAI.destination != resourceSource.transform.position) unit.NavigateToTarget(resourceSource.transform.position, resourceSource.GetComponent<MeshFilter>().mesh.bounds.extents.x + unit.GetComponentInChildren<MeshFilter>().mesh.bounds.extents.x);
         targetTransform = resourceSource.gameObject.transform;
+        if (unit.richAI.pathPending) return;
+        if (!unit.richAI.reachedEndOfPath) return;
+        gatheringUnit.GatheringState = GatheringState.GatherFromSource;
+        targetTransform = null;
     }
     
     void NavReachLastSourcePosition()
     {
-        unit.NavigateToTarget(lastResourceSourcePosition);
-        if (!unit.navigationRunning || unit.navMeshAgent.pathPending) return;
-        if (unit.navMeshAgent.remainingDistance > unit.navMeshAgent.stoppingDistance) return;
-        unit.StopNavigation();
-        Deactivate(); //Todo: Try to find new resource source
+        if (unit.richAI.destination != lastResourceSourcePosition) unit.NavigateToTarget(lastResourceSourcePosition, 0.1f);
+        if (unit.richAI.pathPending) return;
+        if (!unit.richAI.reachedEndOfPath) return;
+        resourceSource = FindNewSourceInRange();
+        if (!resourceSource) return;
+        gatheringUnit.GatheringState = GatheringState.ReachSource;
+        targetTransform = resourceSource.transform;
     }
 
     void GatherFromSource()
@@ -100,7 +106,11 @@ public class GatheringAction : UnitAction
 
     void NavReachNearestStorage()
     {
-        unit.NavigateToTarget(nearestStorage.transform.position);
+        if (unit.richAI.destination != nearestStorage.transform.position) unit.NavigateToTarget(nearestStorage.transform.position, nearestStorage.GetComponent<MeshFilter>().mesh.bounds.extents.x * nearestStorage.transform.lossyScale.x * 1.4f + unit.GetComponentInChildren<MeshFilter>().mesh.bounds.extents.x);
+        if (unit.richAI.pathPending) return;
+        if (!unit.richAI.reachedEndOfPath) return;
+        gatheringUnit.GatheringState = GatheringState.StoreResources;
+        targetTransform = null;
     }
 
     void StoreResources()
@@ -110,19 +120,11 @@ public class GatheringAction : UnitAction
         gatheringUnit.GatheringState = GatheringState.ReachSource;
     }
 
-    protected override void StopIfCollidedWithTarget(Transform transform)
+    ResourceSource FindNewSourceInRange()
     {
-        if (!targetTransform) return;
-        if (transform != targetTransform) return;
-        unit.StopNavigation();
-        targetTransform = null;
-        if (gatheringUnit.GatheringState == GatheringState.ReachSource)
-        {
-            gatheringUnit.GatheringState = GatheringState.GatherFromSource;
-        }
-        else if (gatheringUnit.GatheringState == GatheringState.ReachNearestStorage)
-        {
-            gatheringUnit.GatheringState = GatheringState.StoreResources;
-        }
+        Collider[] result = new Collider[1];
+        Physics.OverlapBoxNonAlloc(unit.transform.position, new Vector3(5, 10, 5), result, Quaternion.identity,
+            GameManager.Instance.resourceSourceLayerMask);
+        return result[0] == null ? null : result[0].GetComponent<ResourceSource>();
     }
 }

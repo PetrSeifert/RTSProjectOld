@@ -40,26 +40,15 @@ public class BuildingAction : UnitAction
             Deactivate();
             return;
         }
-        unit.NavigateToTarget(building.transform.position);
+        if (unit.richAI.destination != building.transform.position) unit.NavigateToTarget(building.transform.position, building.GetComponent<MeshFilter>().mesh.bounds.extents.x * building.transform.lossyScale.x * 1.4f + unit.GetComponentInChildren<MeshFilter>().mesh.bounds.extents.x);
+        if (unit.richAI.pathPending) return;
+        if (!unit.richAI.reachedEndOfPath) return;
+        villager.buildingState = BuildingState.BuildBuilding;
+        targetTransform = null;
     }
 
     void BuildBuilding()
     {
         building.AddBuilder(villager);
-    }
-    
-    protected override void StopIfCollidedWithTarget(Transform transform)
-    {
-        if (!targetTransform) return;
-        if (transform != targetTransform) return;
-        unit.StopNavigation();
-        targetTransform = null;
-        if (!villager)
-        {
-            Deactivate();
-            return;
-        }
-        
-        villager.buildingState = BuildingState.BuildBuilding;
     }
 }

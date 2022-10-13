@@ -8,10 +8,16 @@ public class UI_Manager : Singleton<UI_Manager>
 {
     public List<UI_ButtonWithRTSEntity> buttonsWithRtsEntity;
     
-    [SerializeField] Faction playerFaction;
+    public Faction playerFaction;
     
-    [SerializeField] GameObject villagerPanel;
-    [SerializeField] GameObject unitSpawnerPanel;
+    [SerializeField] GameObject entityPanel;
+    [SerializeField] GameObject villagerUI;
+    [SerializeField] GameObject archerUI;
+    [SerializeField] GameObject soldierUI;
+    [SerializeField] GameObject traderUI;
+    [SerializeField] GameObject mainHallUI;
+    [SerializeField] GameObject barracksUI;
+    [SerializeField] GameObject storageUI;
     [SerializeField] TMP_Text resourcesText;
     [SerializeField] EventSystem eventSystem;
 
@@ -24,21 +30,17 @@ public class UI_Manager : Singleton<UI_Manager>
     {
         base.Awake();
         raycaster = GetComponent<GraphicRaycaster>();
-        playerFaction.selectionController.onRTSFactionEntitiesSelected.AddListener(AddEntitiesToSelectionUIAndUpdate);
-        playerFaction.selectionController.onRTSFactionEntitiesDeselected.AddListener(RemoveEntitiesFromSelectionUIAndUpdate);
-        playerFaction.selectionController.onSelectionCleared.AddListener(HidePanels);
-        playerFaction.onResourcesChanged.AddListener(SetIfButtonsUsable);
-        playerFaction.onResourcesChanged.AddListener(UpdateResourcesUI);
-        HidePanels();
+        
     }
 
-    protected override void OnDestroy()
+    void Start()
     {
-        playerFaction.onResourcesChanged.RemoveListener(SetIfButtonsUsable);
-        playerFaction.onResourcesChanged.RemoveListener(UpdateResourcesUI);
-        playerFaction.selectionController.onRTSFactionEntitiesSelected.RemoveListener(AddEntitiesToSelectionUIAndUpdate);
-        playerFaction.selectionController.onRTSFactionEntitiesDeselected.RemoveListener(RemoveEntitiesFromSelectionUIAndUpdate);
-        playerFaction.selectionController.onSelectionCleared.RemoveListener(HidePanels);
+        EventManager.Instance.onRTSFactionEntitiesSelected.AddListener(AddEntitiesToSelectionUIAndUpdate);
+        EventManager.Instance.onRTSFactionEntitiesDeselected.AddListener(RemoveEntitiesFromSelectionUIAndUpdate);
+        EventManager.Instance.onSelectionCleared.AddListener(HidePanels);
+        EventManager.Instance.onResourcesAmountChanged.AddListener(SetIfButtonsUsable);
+        EventManager.Instance.onResourcesAmountChanged.AddListener(UpdateResourcesUI);
+        HidePanels();
     }
 
     public bool ClickedOnUI()
@@ -50,14 +52,47 @@ public class UI_Manager : Singleton<UI_Manager>
         return results.Count > 0;
     }
 
-    void ActivateVillagerPanel()
+    void ActivateVillagerUI()
     {
-        villagerPanel.SetActive(true);
+        entityPanel.SetActive(true);
+        villagerUI.SetActive(true);
+    }
+    
+    void ActivateSoldierUI()
+    {
+        entityPanel.SetActive(true);
+        soldierUI.SetActive(true);
+    }
+    
+    void ActivateArcherUI()
+    {
+        entityPanel.SetActive(true);
+        archerUI.SetActive(true);
+    }
+    
+    void ActivateTraderUI()
+    {
+        entityPanel.SetActive(true);
+        traderUI.SetActive(true);
     }
     
     void ActivateUnitSpawnerPanel()
+    {        
+        entityPanel.SetActive(true);
+        if (playerFaction.selectionController.selectedBuilding is Baracks)
+        {
+            barracksUI.SetActive(true);
+        }
+        else if (playerFaction.selectionController.selectedBuilding is MainHall)
+        {
+            mainHallUI.SetActive(true);
+        }
+    }
+
+    void ActivateStoragePanel()
     {
-        unitSpawnerPanel.SetActive(true);
+        entityPanel.SetActive(true);
+        storageUI.SetActive(true);
     }
 
     void AddEntitiesToSelectionUIAndUpdate(RTSFactionEntity[] entitiesToAdd)
@@ -67,11 +102,26 @@ public class UI_Manager : Singleton<UI_Manager>
             Unit unitToAdd = rtsFactionEntity as Unit;
             if (unitToAdd)
             {
-                ActivateVillagerPanel();
+                switch (unitToAdd.type)
+                {
+                    case UnitType.Villager:
+                        ActivateVillagerUI();
+                        break;
+                    case UnitType.Soldier:
+                        ActivateSoldierUI();
+                        break;
+                    case UnitType.Archer:
+                        ActivateArcherUI();
+                        break;
+                    case UnitType.Trader:
+                        ActivateTraderUI();
+                        break;
+                }
             }
             else
             {
-                ActivateUnitSpawnerPanel();
+                if (rtsFactionEntity is Storage) ActivateStoragePanel();
+                else ActivateUnitSpawnerPanel();
             }
         }
     }
@@ -81,7 +131,7 @@ public class UI_Manager : Singleton<UI_Manager>
         foreach (RTSFactionEntity rtsFactionEntity in entitiesToRemove)
         {
             Building buildingToRemove = rtsFactionEntity as Building;
-            if (buildingToRemove) HideUnitSpawnerPanel();
+            if (buildingToRemove) HidePanels();
         }
     }
 
@@ -93,13 +143,14 @@ public class UI_Manager : Singleton<UI_Manager>
 
     void HidePanels()
     {
-        villagerPanel.SetActive(false);
-        unitSpawnerPanel.SetActive(false);
-    }
-
-    void HideUnitSpawnerPanel()
-    {
-        unitSpawnerPanel.SetActive(false);
+        entityPanel.SetActive(false);
+        villagerUI.SetActive(false);
+        mainHallUI.SetActive(false);
+        barracksUI.SetActive(false);
+        archerUI.SetActive(false);
+        soldierUI.SetActive(false);
+        traderUI.SetActive(false);
+        storageUI.SetActive(false);
     }
 
     void UpdateResourcesUI()
@@ -114,5 +165,10 @@ public class UI_Manager : Singleton<UI_Manager>
         {
             buttonWithRtsEntity.button.interactable = playerFaction.HasEnoughResources(buttonWithRtsEntity.rtsFactionEntity.resourcesNeededToCreateMe);
         }
+    }
+
+    public void TogglePlacingBuilding(Building building)
+    {
+        playerFaction.buildingPlacer.TogglePlacingBuilding(building);
     }
 }

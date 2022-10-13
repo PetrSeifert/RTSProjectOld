@@ -45,7 +45,7 @@ public class AttackAction : UnitAction
             Deactivate();
             return;
         }
-        unit.NavigateToTarget(targetTransform.position);
+        unit.NavigateToTarget(targetTransform.position, unit.SqrAttackRange);
         if (!IsTargetInRange()) return;
         unit.StopNavigation();
             
@@ -77,6 +77,4 @@ public class AttackAction : UnitAction
         Vector3 offset = targetTransform.position - unit.transform.position;
         return Vector3.SqrMagnitude(offset) <= attackingUnit.SqrAttackRange;
     }
-
-    protected override void StopIfCollidedWithTarget(Transform transform){}
 }

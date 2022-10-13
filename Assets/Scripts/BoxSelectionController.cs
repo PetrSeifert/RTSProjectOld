@@ -11,14 +11,16 @@ public class BoxSelectionController : MonoBehaviour
     Texture2D whiteTexture;
     Vector2 boxSelectionStartPosition;
     Vector2 boxSelectionEndPosition;   
-    float remainingDragDelay;
     Rect selectionBox;
     bool selectionBoxUnusable;
-    
+    [Range(0f, 1f)]
+    [SerializeField] float minSelectionBoxSizeX;
+    [Range(0f, 1f)]
+    [SerializeField] float minSelectionBoxSizeY;
+
     void Awake()
     {
         selectionController = GetComponent<SelectionController>();
-        remainingDragDelay = dragDelay;
         whiteTexture = new Texture2D( 1, 1 );
         whiteTexture.SetPixel( 0, 0, Color.white );
         whiteTexture.Apply();
@@ -26,7 +28,8 @@ public class BoxSelectionController : MonoBehaviour
 
     void Update()
     {
-        Vector3 mousePosition = InputManager.Instance.mousePosition; 
+        if (selectionController.faction.buildingPlacer.placingBuilding) return;
+        Vector2 mousePosition = InputManager.Instance.mousePosition; 
         if(InputManager.Instance.primaryDown)
         {
             boxSelectionStartPosition = mousePosition;
@@ -34,22 +37,31 @@ public class BoxSelectionController : MonoBehaviour
         }
         else if (InputManager.Instance.primaryHeld)
         {
-            remainingDragDelay = dragDelay - InputManager.Instance.primaryHoldTime;
-            if (remainingDragDelay > 0 || selectionBoxUnusable) return;
-            //Update selection box
             boxSelectionEndPosition = mousePosition;
+            if (selectionBoxUnusable) return;
+            //Update selection box
             selectionBox = GetScreenRect(boxSelectionStartPosition, boxSelectionEndPosition);
         }
         else if (InputManager.Instance.primaryUp)
         {
-            if (remainingDragDelay > 0 || selectionBoxUnusable ||
-                boxSelectionStartPosition == boxSelectionEndPosition) return;
-            BoxSelection();
+            Debug.Log($"{selectionBox.width} {selectionBox.height}");
+            if (!selectionBoxUnusable && selectionBox.width / Screen.currentResolution.width >= minSelectionBoxSizeX && selectionBox.height / Screen.currentResolution.width >= minSelectionBoxSizeY)
+                BoxSelection();
+            
+            boxSelectionStartPosition = Vector2.zero;
+            boxSelectionEndPosition = Vector2.zero;
+            selectionBox = Rect.zero;
         }
     }
     
     void BoxSelection()
     {
+        if (selectionController.selectedBuilding)
+        {
+            EventManager.Instance.onSelectionCleared.Invoke();
+            selectionController.selectedBuilding.ToggleSelectionCircle();
+            selectionController.selectedBuilding = null;
+        }
         if (!InputManager.Instance.shiftHeld)
             selectionController.ClearSelection();
         
@@ -59,14 +71,18 @@ public class BoxSelectionController : MonoBehaviour
                     GameManager.Instance.mainCamera.WorldToScreenPoint(selectableUnit.transform.position)))
                 continue;
                     
-            selectionController.HandleUnitSelection(selectableUnit);
+            if (selectionController.selectedUnitsByUnitType[selectableUnit.type].Contains(selectableUnit))
+                if (InputManager.Instance.shiftHeld)
+                    selectionController.DeselectUnit(selectableUnit); // If unit is already selected and player is holding shift, than deselect that unit
+            
+            selectionController.SelectUnit(selectableUnit);
         }
-        remainingDragDelay = dragDelay;
     }
-    
+
     void OnGUI()
     {
-        if (remainingDragDelay > 0 || selectionBoxUnusable) return;
+        if (selectionBox.width / Screen.currentResolution.width < minSelectionBoxSizeX || selectionBox.height / Screen.currentResolution.width < minSelectionBoxSizeY || selectionBoxUnusable) 
+            return;
         DrawSelectionBox();
     }
 

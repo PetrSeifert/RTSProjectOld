@@ -57,7 +57,7 @@ public class PersistentSingleton<T> : MonoBehaviour	where T : Component
             //another reference in scene, destroy it!
             if(this != instance)
             {
-                Destroy(this.gameObject);
+                Destroy(gameObject);
             }
         }
     }

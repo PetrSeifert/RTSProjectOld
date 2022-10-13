@@ -6,17 +6,12 @@ public class MoveToPointAction : UnitAction
 
     public MoveToPointAction(Unit unit,  Vector3 point) : base(unit)
     {
-        this.point = new Vector3(point.x, unit.transform.position.y, point.z);//Ignore y
+        this.point = point;
     }
 
     public override void Update()
     {
-        unit.NavigateToTarget(point);
-        if (!unit.navigationRunning || unit.navMeshAgent.pathPending) return;
-        if (unit.navMeshAgent.remainingDistance > unit.navMeshAgent.stoppingDistance) return;
-        unit.StopNavigation();
-        Deactivate();
+        if (unit.richAI.destination != point)
+            unit.NavigateToTarget(point, 0.2f);
     }
-    
-    protected override void StopIfCollidedWithTarget(Transform transform){}
 }
