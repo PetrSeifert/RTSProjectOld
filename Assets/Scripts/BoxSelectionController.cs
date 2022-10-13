@@ -39,12 +39,10 @@ public class BoxSelectionController : MonoBehaviour
         {
             boxSelectionEndPosition = mousePosition;
             if (selectionBoxUnusable) return;
-            //Update selection box
             selectionBox = GetScreenRect(boxSelectionStartPosition, boxSelectionEndPosition);
         }
         else if (InputManager.Instance.primaryUp)
         {
-            Debug.Log($"{selectionBox.width} {selectionBox.height}");
             if (!selectionBoxUnusable && selectionBox.width / Screen.currentResolution.width >= minSelectionBoxSizeX && selectionBox.height / Screen.currentResolution.width >= minSelectionBoxSizeY)
                 BoxSelection();
             
